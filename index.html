@@ -175,10 +175,24 @@ details.season summary::-webkit-details-marker{display:none}
 .a .d{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3}
 .rrow{display:flex;align-items:center;gap:12px;font-size:13.5px;padding:9px 0;border-bottom:1px solid var(--line)}
 .rrow:last-child{border:0}
-.rrow .rn{width:26px;font-family:var(--disp);font-size:11px;color:var(--dim);letter-spacing:.06em}
-.rrow.on{color:var(--gold);font-weight:600}
-.rrow.on .rn{color:var(--gold)}
+.rrow .rn{width:52px;font-family:var(--disp);font-size:17px;font-weight:600;letter-spacing:.04em}
+.rrow.on{color:var(--tx)}
 .rrow.lock{color:var(--dim)}
+.rrow.lock .rn{opacity:.75}
+.rank{font-size:28px;letter-spacing:.04em;line-height:1.15}
+/* rank tiers */
+[class^="rn-"]{font-family:var(--disp);font-weight:600}
+.rn-graphite{color:#7a7a7a}
+.rn-steel{color:#9aa3ad}
+.rn-copper{color:#b8734a}
+.rn-bronze{color:#c48f5a}
+.rn-silver{color:#c3c8cf}
+.rn-sterling{color:#e6eaef}
+.rn-rose{color:#e2aa8f}
+.rn-gold{color:#d4af61}
+.rn-gilt{background:linear-gradient(180deg,#fff0b8,#e6c06a 45%,#b8892e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rn-platinum{background:linear-gradient(115deg,#ffffff 0%,#cfe6ff 25%,#f4f9ff 45%,#a9cdf5 65%,#ffffff 85%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite;filter:drop-shadow(0 0 6px rgba(190,220,255,.35))}
+@keyframes shine{to{background-position:-220% 0}}
 #toasts{position:fixed;top:calc(14px + var(--st));left:0;right:0;z-index:60;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 .toast{background:rgba(15,15,15,.96);border:1px solid var(--line2);padding:9px 16px;border-radius:99px;font-weight:500;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.6);animation:tin .3s ease,tout .3s ease 2.4s forwards;display:flex;align-items:center;gap:8px}
 .toast.xp{color:var(--gold);border-color:rgba(212,175,97,.4);font-variant-numeric:tabular-nums}
@@ -441,7 +455,7 @@ Oz|1997|Tom Fontana|Ernie Hudson,J. K. Simmons,Lee Tergesen|Crime,Drama|55
 `;
 
 /* ================= HELPERS ================= */
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 const NOW_YEAR = new Date().getFullYear();
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -716,13 +730,15 @@ const isFresh = y => y && y >= NOW_YEAR-1;
 /* ================= XP / LEVELS / ACHIEVEMENTS ================= */
 const XP = { film:100, golden:100, classic:60, fresh:40, greatsFilm:150, ep:15, classicEp:5, season:75, series:300, greatsSeries:400, rating:10, genre:25, ach:100 };
 const RANKS = [
-  [1,'Ticket Holder','I'],[5,'Matinée Regular','II'],[10,'Picturegoer','III'],[18,'Film Buff','IV'],[25,'Projectionist','V'],
-  [35,'Cinephile','VI'],[45,'Critic','VII'],[60,'Festival Juror','VIII'],[75,'Auteur','IX'],[100,'National Treasure','X']
+  // [level, numeral, tier]  — tiers climb from graphite through bronze and silver to gold, with platinum at the top
+  [1,'I','graphite'],[5,'II','steel'],[10,'III','copper'],[18,'IV','bronze'],[25,'V','silver'],
+  [35,'VI','sterling'],[45,'VII','rose'],[60,'VIII','gold'],[75,'IX','gilt'],[100,'X','platinum']
 ];
 const need = L => Math.round(150*Math.pow(L-1,1.7));
 function levelFor(xp){ let L=1; while(need(L+1)<=xp) L++; return L; }
 function rankFor(L){ let r=RANKS[0]; for(const x of RANKS) if(L>=x[0]) r=x; return r; }
 const nextRank = L => RANKS.find(x=>x[0]>L) || null;
+const rankTag = (r, cls='') => `<span class="rn-${r[2]} ${cls}">${r[1]}</span>`;
 const ACH = [
   ['first-reel','film','First Reel','Watch your first film',s=>s.films>=1],
   ['films10','ticket','Regular','Watch 10 films',s=>s.films>=10],
@@ -956,10 +972,10 @@ function levelCard(P, compact){
   const nr = nextRank(L);
   return `<div class="card lvl" style="padding:18px"><div class="row">
       <div class="badge"><div><small>LVL</small>${L}</div></div>
-      <div style="flex:1;min-width:0"><div class="eyebrow">Rank ${P.rank[2]}</div><div class="rank">${esc(P.rank[1])}</div><div class="small mute">${fmtNum(P.xp)} XP</div></div>
+      <div style="flex:1;min-width:0"><div class="eyebrow">Rank</div><div class="rank">${rankTag(P.rank)}</div><div class="small mute">${fmtNum(P.xp)} XP</div></div>
     </div>
     <div class="bar"><i style="width:${pct}%"></i></div>
-    <div class="small mute" style="display:flex;justify-content:space-between;gap:8px"><span>${fmtNum(nxt-P.xp)} XP to level ${L+1}</span><span>${nr?`${esc(nr[1])} · Lv ${nr[0]}`:'Max rank'}</span></div>
+    <div class="small mute" style="display:flex;justify-content:space-between;gap:8px"><span>${fmtNum(nxt-P.xp)} XP to level ${L+1}</span><span>${nr?`Rank ${rankTag(nr)} at Lv ${nr[0]}`:'Top rank'}</span></div>
     ${compact?'':`<div class="kpis"><div class="kpi"><b>${P.st.films}</b><span>Films</span></div><div class="kpi"><b>${P.st.eps}</b><span>Episodes</span></div><div class="kpi"><b>${P.st.hours}</b><span>Hours</span></div><div class="kpi"><b>${P.ach.size}</b><span>Badges</span></div></div>`}
   </div>`;
 }
@@ -1146,7 +1162,7 @@ function vStats(P){
   <div class="sec"><h2>Where your XP came from</h2></div>
   <div class="card">${Object.entries(P.br).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="xprow"><span>${esc(k)}</span><b>${fmtNum(v)}</b></div>`).join('')||'<div class="small mute">Watch something to start earning XP.</div>'}</div>
   <div class="sec"><h2>Ranks</h2></div>
-  <div class="card">${RANKS.map(r=>`<div class="rrow ${P.rank[1]===r[1]?'on':P.level<r[0]?'lock':''}"><span class="rn">${r[2]}</span><span style="flex:1">${esc(r[1])}</span><span class="small">Lv ${r[0]} · ${fmtNum(need(r[0]))} XP</span></div>`).join('')}</div>
+  <div class="card">${RANKS.map(r=>`<div class="rrow ${P.rank[1]===r[1]?'on':P.level<r[0]?'lock':''}"><span class="rn">${rankTag(r)}</span><span style="flex:1" class="small">${P.rank[1]===r[1]?'Current rank':''}</span><span class="small">Lv ${r[0]} · ${fmtNum(need(r[0]))} XP</span></div>`).join('')}</div>
   <div class="sec"><h2>How XP works</h2></div>
   <div class="card small mute" style="line-height:1.7">
     Film ${tx('+'+XP.film)} · Classic (30+ yrs) ${tx('+'+XP.classic)}, pre-1971 ${tx('+'+XP.golden)} · New release ${tx('+'+XP.fresh)} · Greats / Top 250 film ${tx('+'+XP.greatsFilm)}<br>
@@ -1287,8 +1303,8 @@ function settingsHTML(){
 function toast(msg,cls='',html=false){ const t=document.createElement('div'); t.className='toast '+cls; if(html) t.innerHTML=msg; else t.textContent=msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(),2900); }
 function levelUp(P, newRank){
   const el=$('#lvup');
-  el.innerHTML = `<div><div class="badge"><div><small>LVL</small>${P.level}</div></div><div class="eyebrow" style="margin-bottom:8px">Level up</div><h2>${newRank?esc(P.rank[1]):'Level '+P.level}</h2>
-    <p class="mute" style="margin:8px 0 22px">${newRank?`New rank unlocked · Rank ${P.rank[2]}`:`${fmtNum(P.xp)} XP and counting`}</p>
+  el.innerHTML = `<div><div class="badge"><div><small>LVL</small>${P.level}</div></div><div class="eyebrow" style="margin-bottom:8px">Level up</div><h2>${newRank?`Rank ${rankTag(P.rank)}`:'Level '+P.level}</h2>
+    <p class="mute" style="margin:8px 0 22px">${newRank?`New rank unlocked at level ${P.level}`:`${fmtNum(P.xp)} XP and counting`}</p>
     <button class="btn gold" data-act="lvclose" style="min-width:170px">Continue</button></div>`;
   el.classList.add('on');
 }
