@@ -441,6 +441,7 @@ Oz|1997|Tom Fontana|Ernie Hudson,J. K. Simmons,Lee Tergesen|Crime,Drama|55
 `;
 
 /* ================= HELPERS ================= */
+const APP_VERSION = '1.2';
 const NOW_YEAR = new Date().getFullYear();
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1276,6 +1277,7 @@ function settingsHTML(){
   ${SHEET.restore?`<form class="form" data-form="restore"><textarea name="data" rows="5" placeholder="Paste a backup here (works with backups from the Claude version too)"></textarea><button class="btn gold block">Restore (merges with your library)</button></form>`:''}
   <div class="sec"><h2>Add to Home Screen</h2></div>
   <div class="small mute" style="line-height:1.6"><b style="color:var(--tx);font-weight:500">iPhone</b> — Safari → Share → Add to Home Screen.<br><b style="color:var(--tx);font-weight:500">Android</b> — Chrome → ⋮ → Add to Home screen.</div>
+  <div class="small dim" style="margin-top:22px">ReelXP version ${APP_VERSION}</div>
   <div class="sec"><h2>Danger zone</h2></div>
   <button class="btn red block" data-act="${SHEET.confirmWipe?'wipe':'askwipe'}">${SHEET.confirmWipe?'Tap again to erase everything on this device':'Erase all data'}</button>
   ${attribution()}`;
@@ -1417,7 +1419,14 @@ window.addEventListener('hashchange', ()=>{ const v=location.hash.slice(1); if(V
 /* ================= START ================= */
 render();
 if(CFG.key){ setTimeout(()=>{ refreshShows(); migrateLegacy(); }, 800); }
-if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(reg=>{
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') reg.update().catch(()=>{}); });
+  }).catch(()=>{});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(!hadController || reloaded) return; reloaded = true; saveNow(); location.reload(); });
+}
 </script>
 </body>
 </html>
